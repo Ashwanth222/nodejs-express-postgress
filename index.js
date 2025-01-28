@@ -1,25 +1,37 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
-const db = require('./queries')
-const port = 3000
+const expressOasGenerator = require('express-oas-generator')
+const dotenv = require("dotenv");
+const errorMiddleware = require('./middleware/errorHandler');
+const swaggerUIPath= require("swagger-ui-express");
+const swaggerjsonFilePath = require("./swagger.json");
+//const bookRoutes = require('./routers/bookRoutes').default;
+//const db = require("./model");
+dotenv.config();
 
-app.use(bodyParser.json())
-app.use(
-  bodyParser.urlencoded({
-    extended: true,
-  })
-)
+//swagger
+//expressOasGenerator.init(app, {});
+const port = 3001
+// db.sequelize.sync()
+//   .then(() => {
+//     console.log("Synced db.");
+//   })
+//   .catch((err) => {
+//     console.log("Failed to sync db: " + err.message);
+//   });
+var routes = require('./routers/userRoutes');
+var aRoutes = require('./routers/axiosRoutes');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+routes(app); 
+aRoutes(app);
+app.use(errorMiddleware);
+app.get('/', (req, res) => {
+  res.send('Hello, Express!');
+});
 
-app.get('/', (request, response) => {
-  response.json({ info: 'Node.js, Express, and Postgres API' })
-})
-
-app.get('/users', db.getUsers)
-app.get('/users/:id', db.getUserById)
-app.post('/users', db.createUser)
-app.put('/users/:id', db.updateUser)
-app.delete('/users/:id', db.deleteUser)
+app.use("/api-docs", swaggerUIPath.serve, swaggerUIPath.setup(swaggerjsonFilePath));
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`)
